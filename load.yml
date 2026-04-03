@@ -1,0 +1,12 @@
+config:
+  target: "http://52.23.171.11:8080"
+  phases:
+    - duration: 100
+      arrivalRate: 1
+      rampTo: 50
+  http:
+    timeout: 20
+scenarios:
+  - flow:
+      - get:
+          url: "/hash?text=enemy"
