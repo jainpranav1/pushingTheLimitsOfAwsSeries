@@ -1,5 +1,20 @@
 const crypto = require("crypto");
 const http = require("http");
+const { Worker } = require("worker_threads");
+const os = require("os");
+
+const numWorkers = os.availableParallelism();
+console.log("Number of workers:", numWorkers);
+
+// Create worker pool
+const workers = [];
+for (let i = 0; i < numWorkers; i++) {
+  workers.push(new Worker("./worker.js"));
+}
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 const server = http.createServer((req, res) => {
   if (req.url.startsWith("/hash")) {
@@ -9,15 +24,15 @@ const server = http.createServer((req, res) => {
 
     const text = params.get("text");
 
-    console.log(`Received request with text: ${text}`);
+    let currWorker = getRandomInt(0, numWorkers - 1);
 
-    // Do 100k SHA256 rounds
-    let data = text;
-    for (let i = 0; i < 100000; i++) {
-      data = crypto.createHash("sha256").update(data).digest("hex");
-    }
+    console.log(`Processing text ${text} with worker ${currWorker}`);
 
-    res.end(data);
+    workers[currWorker].postMessage(text);
+
+    workers[currWorker].once("message", (data) => {
+      res.end(data);
+    });
   } else {
     res.end("OK");
   }
